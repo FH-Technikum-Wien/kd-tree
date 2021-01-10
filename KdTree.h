@@ -4,22 +4,25 @@
 
 #include "Structures.h"
 
-constexpr int DIMENSIONS = 2;
+constexpr int DIMENSIONS = 3;
 
 class KdTree
 {
 public:
 	KdTree(float* vertices, int numberOfTriangles);
 	KdTree(std::vector<Point*> points);
+	Triangle* raycast(Ray ray, float maxDistance);
 
-	void Print();
+	void print();
 
 private:
 
 	std::vector<Point*> getPointList(float* vertices, int numberOfTriangles);
 	Node* createKdTree(std::vector<Point*> points, int depth);
+	Triangle* findIntersection(Node* node, Ray ray, float maxDistance);
+	bool rayIntersectionWithTriagnle(Triangle* triangle, Ray ray);
 
-	auto getComparatorForAxis(int axis) const
+	inline auto getComparatorForAxis(int axis) const
 	{ 
 		return [axis](Point* p1, Point* p2)
 		{
