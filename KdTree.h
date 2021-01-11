@@ -14,6 +14,7 @@ public:
 	Triangle* raycast(Ray ray, float maxDistance);
 
 	void print();
+	void printStatistics();
 
 private:
 

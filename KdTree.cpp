@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <functional>
 
+#include <fstream>
+#include <limits>
+
 KdTree::KdTree(float* vertices, int numberOfTriangles) : KdTree(getPointList(vertices, numberOfTriangles)) {}
 
 KdTree::KdTree(std::vector<Point*> points) {
@@ -32,9 +35,37 @@ void KdTree::print()
 	printTree(root);
 }
 
+void KdTree::printStatistics()
+{
+	int maxDepth = 0;
+	int minDepth = std::numeric_limits<int>::max();
+	std::function<void(Node*, int)> depthCount;
+	depthCount = [&maxDepth, &minDepth, &depthCount](Node* node, int depth) {
+		if(node == nullptr)
+			return;
+
+		// Current depth higher than maxDepth -> new highest depth.
+		if (depth > maxDepth)
+			maxDepth = depth;
+
+		// If leaf node and smaller depth than minDepth -> new lowest depth.
+		if (node->left == nullptr && node->right == nullptr && depth < minDepth)
+			minDepth = depth;
+		
+		// Continue left and right recursively.
+		depthCount(node->left, depth + 1);
+		depthCount(node->right, depth + 1);
+	};
+
+	depthCount(root, 0);
+	std::cout << "Max Depth: " << maxDepth << std::endl;
+	std::cout << "Min Depth: " << minDepth << std::endl;
+}
+
 std::vector<Point*> KdTree::getPointList(float* vertices, int numberOfTriangles)
 {
 	std::vector<Point*> points;
+	// Create points for each triangle and connect them (with a reference to the triangle).
 	for (int i = 0; i < numberOfTriangles; i++)
 	{
 		int index = i * 9;
@@ -42,7 +73,9 @@ std::vector<Point*> KdTree::getPointList(float* vertices, int numberOfTriangles)
 		Vector b = Vector(vertices[index + 3], vertices[index + 4], vertices[index + 5]);
 		Vector c = Vector(vertices[index + 6], vertices[index + 7], vertices[index + 8]);
 
+		// Connects triangle with points and vice-versa.
 		Triangle* triangle = new Triangle(a, b, c);
+		// Get as std::vector.
 		std::vector<Point*> trianglePoints = triangle->getPoints();
 		points.insert(points.end(), trianglePoints.begin(), trianglePoints.end());
 	}
@@ -55,13 +88,15 @@ Node* KdTree::createKdTree(std::vector<Point*> points, int depth)
 	if (points.empty())
 		return nullptr;
 
+	// If only one point left, just add it.
 	if (points.size() == 1)
-		return new Node(points[0], nullptr, nullptr, depth % DIMENSIONS);
+		return new Node(points[0], nullptr, nullptr, 0);
 
 	// Get widest axis
 	float maxAxisWidth = 0;
 	int axisWithMaxWidth = 0;
 
+	// Go through each axis and determine biggest extend.
 	for (int axis = 0; axis < DIMENSIONS; axis++)
 	{
 		auto comparator = getComparatorForAxis(axis);
@@ -77,7 +112,7 @@ Node* KdTree::createKdTree(std::vector<Point*> points, int depth)
 		}
 	}
 
-	// Get median point (and sort my median).
+	// Get median point (and sort by median).
 	int medianIndex = points.size() / 2;
 	std::nth_element(points.begin(), points.begin() + medianIndex, points.end(), getComparatorForAxis(axisWithMaxWidth));
 	Point* medianPoint = points[medianIndex];
@@ -108,12 +143,19 @@ Triangle* KdTree::findIntersection(Node* node, Ray ray, float maxDistance)
 
 	int axis = node->axis;
 
-	// Get near and far nodes and traverse near before far.
+	// Get near and far nodes depending on ray's origin (Before or after splitting plane?).
 	Node* near = ray.origin[axis] > node->point->pos[axis] ? node->right : node->left;
 	Node* far = near == node->right ? node->left : node->right;
 
+	// Distance from ray to splitting plane.
+	float t = (node->point->pos[axis] - ray.origin[axis]) / ray.direction[axis];
+
+	// If our direction is parallel to the axis, don't reduce it.
+	if (ray.direction[axis] == 0.0f)
+		t = maxDistance;
+
 	// Check near node.
-	Triangle* triangle = findIntersection(near, ray, maxDistance);
+	Triangle* triangle = findIntersection(near, ray, t);
 
 	// Return triangle if collided
 	if (triangle != nullptr)
@@ -123,8 +165,7 @@ Triangle* KdTree::findIntersection(Node* node, Ray ray, float maxDistance)
 	if (rayIntersectionWithTriagnle(node->point->triangle, ray))
 		return node->point->triangle;
 
-	// Distance from ray to splitting plane.
-	float t = (node->point->pos[axis] - ray.origin[axis]) / ray.direction[axis];
+	
 
 	// Only check far node if intersection is possible.
 	if (ray.direction[axis] != 0.0f && t >= 0 && t < maxDistance) {
@@ -174,6 +215,5 @@ bool KdTree::rayIntersectionWithTriagnle(Triangle* triangle, Ray ray)
 
 	float t = f * edge2.dot(q);
 
-	// False means here, that there is a line intersection but not a ray intersection.
 	return t > EPSILON;
 }
