@@ -9,7 +9,7 @@
 KdTree::KdTree(float* vertices, int numberOfTriangles) : KdTree(getPointList(vertices, numberOfTriangles)) {}
 
 KdTree::KdTree(std::vector<Point*> points) {
-	root = createKdTree(points, 0);
+	root = createKdTree(points, 0, Vector(0,0,0), Vector(0,0,0));
 }
 
 Triangle* KdTree::raycast(Ray ray, float maxDistance)
@@ -17,30 +17,48 @@ Triangle* KdTree::raycast(Ray ray, float maxDistance)
 	return findIntersection(root, ray, maxDistance);
 }
 
+std::vector<Node*> KdTree::getNodes()
+{
+	std::vector<Node*> nodes;
+
+	std::function<void(Node*)> getNodeRecursive;
+	getNodeRecursive = [&nodes, &getNodeRecursive](Node* node) {
+		if (node == nullptr)
+			return;
+
+		nodes.push_back(node);
+		getNodeRecursive(node->left);
+		getNodeRecursive(node->right);
+	};
+
+	getNodeRecursive(root);
+	return nodes;
+}
+
 void KdTree::print()
 {
-	std::function<void(Node*)> printTree;
-	printTree = [&printTree](Node* node) {
-		std::cout << node->point->pos << " | " << node->axis << std::endl;
+	std::function<void(Node*)> printRecursive;
+	printRecursive = [&printRecursive](Node* node) {
+		std::cout << node->point->pos << " | " << node->axis << " | " << "Max: " << node->max << " Min: " << node->min << std::endl;
 		if (node->left != nullptr) {
 			std::cout << "Left:" << std::endl;
-			printTree(node->left);
+			printRecursive(node->left);
 		}
 		if (node->right != nullptr) {
 			std::cout << "Right:" << std::endl;
-			printTree(node->right);
+			printRecursive(node->right);
 		}
 	};
 
-	printTree(root);
+	printRecursive(root);
 }
 
 void KdTree::printStatistics()
 {
 	int maxDepth = 0;
 	int minDepth = std::numeric_limits<int>::max();
-	std::function<void(Node*, int)> depthCount;
-	depthCount = [&maxDepth, &minDepth, &depthCount](Node* node, int depth) {
+	std::function<void(Node*, int)> printStatisticsRecursive;
+	printStatisticsRecursive = [&maxDepth, &minDepth, &printStatisticsRecursive](Node* node, int depth) {
 		if(node == nullptr)
 			return;
 
@@ -53,11 +71,11 @@ void KdTree::printStatistics()
 			minDepth = depth;
 		
 		// Continue left and right recursively.
-		depthCount(node->left, depth + 1);
-		depthCount(node->right, depth + 1);
+		printStatisticsRecursive(node->left, depth + 1);
+		printStatisticsRecursive(node->right, depth + 1);
 	};
 
-	depthCount(root, 0);
+	printStatisticsRecursive(root, 0);
 	std::cout << "Max Depth: " << maxDepth << std::endl;
 	std::cout << "Min Depth: " << minDepth << std::endl;
 }
@@ -82,7 +100,7 @@ std::vector<Point*> KdTree::getPointList(float* vertices, int numberOfTriangles)
 	return points;
 }
 
-Node* KdTree::createKdTree(std::vector<Point*> points, int depth)
+Node* KdTree::createKdTree(std::vector<Point*> points, int depth, Vector max, Vector min)
 {
 	// If reached leaf, stop
 	if (points.empty())
@@ -90,7 +108,7 @@ Node* KdTree::createKdTree(std::vector<Point*> points, int depth)
 
 	// If only one point left, just add it.
 	if (points.size() == 1)
-		return new Node(points[0], nullptr, nullptr, 0);
+		return new Node(points[0], nullptr, nullptr, 0, max, min);
 
 	// Get widest axis
 	float maxAxisWidth = 0;
@@ -121,8 +139,17 @@ Node* KdTree::createKdTree(std::vector<Point*> points, int depth)
 	// Remove median point from list by skipping it.
 	std::vector<Point*> rightPoints(points.begin() + medianIndex + 1, points.end());
 
+	// Set max and min values for the splitting plane
+	Vector newMax = Vector(max);
+	Vector newMin = Vector(min);
+	newMax[axisWithMaxWidth] = medianPoint->pos[axisWithMaxWidth];
+	newMin[axisWithMaxWidth] = medianPoint->pos[axisWithMaxWidth];
+
 	// Recursively go down each branch.
-	return new Node(medianPoint, createKdTree(leftPoints, depth + 1), createKdTree(rightPoints, depth + 1), axisWithMaxWidth);
+	Node* left = createKdTree(leftPoints, depth + 1, newMax, min);
+	Node* right = createKdTree(rightPoints, depth + 1, max, newMin);
+
+	return new Node(medianPoint, left, right, axisWithMaxWidth, max, min);
 }
 
 /// <summary>

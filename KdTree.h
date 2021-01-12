@@ -12,6 +12,7 @@ public:
 	KdTree(float* vertices, int numberOfTriangles);
 	KdTree(std::vector<Point*> points);
 	Triangle* raycast(Ray ray, float maxDistance);
+	std::vector<Node*> getNodes();
 
 	void print();
 	void printStatistics();
@@ -19,7 +20,7 @@ public:
 private:
 
 	std::vector<Point*> getPointList(float* vertices, int numberOfTriangles);
-	Node* createKdTree(std::vector<Point*> points, int depth);
+	Node* createKdTree(std::vector<Point*> points, int depth, Vector max, Vector min);
 	Triangle* findIntersection(Node* node, Ray ray, float maxDistance);
 	bool rayIntersectionWithTriagnle(Triangle* triangle, Ray ray);
 

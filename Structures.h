@@ -10,6 +10,11 @@ struct Vector
 {
 	Vector(float values[3]) : values(values) {}
 	Vector(float x, float y, float z) : values(new float[3]{ x,y,z }) {}
+	Vector(const Vector& vector) : values(new float[3]{ vector[0], vector[1], vector[2] }) {}
+	~Vector() {
+		delete[] values;
+		values = nullptr;
+	}
 
 	float operator[](int i) const { return values[i]; }
 	float& operator[](int i) { return values[i]; }
@@ -37,6 +42,7 @@ struct Point
 	Point(Vector pos, Triangle* triangle) : pos(pos), triangle(triangle) {}
 
 	Vector pos;
+
 	// Triangle this point belongs to
 	Triangle* triangle;
 };
@@ -59,7 +65,7 @@ struct Triangle
 /// </summary>
 struct Node
 {
-	Node(Point* point, Node* left, Node* right, int axis) : point(point), left(left), right(right), axis(axis) {}
+	Node(Point* point, Node* left, Node* right, int axis, Vector max, Vector min) : point(point), left(left), right(right), axis(axis), max(max), min(min) {}
 
 	// Point of this splitting plane
 	Point* point;
@@ -69,6 +75,12 @@ struct Node
 
 	// Axis in which this splitting plane lies
 	int axis = 0;
+
+	// Splitting plane limits for each axis
+	// Defines where splitting plane for this node starts and ends
+	// 0 -> undefined/endless
+	Vector max;
+	Vector min;
 };
 
 
