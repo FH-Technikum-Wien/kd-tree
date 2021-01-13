@@ -12,7 +12,7 @@ boost::uniform_int<> randomRange(0, RAND_MAX);
 boost::variate_generator< boost::mt19937, boost::uniform_int<> > mersenneTwisterRand(mersenneTwister, randomRange);
 
 // Test triangles
-float vertices[27]{
+float vertices[18]{
 	0.0f, 0.0f, 0.0f,
 	2.0f, 0.0f, 0.0f,
 	1.0f, 2.0f, 0.0f,
@@ -20,10 +20,6 @@ float vertices[27]{
 	1.5f, 1.0f, 0.0f,
 	3.5f, 1.0f, 0.0f,
 	2.5f, 3.0f, 0.0f,
-
-	5.5f, 4.0f, 5.0f,
-	8.5f, 1.0f, 4.0f,
-	4.5f, 3.0f, 3.0f,
 };
 
 float* createRandomTriangles(int numberOfTriangles, int range);
@@ -31,24 +27,28 @@ Ray createRandomRay(int originRange);
 
 int main() {
 	
-	int numberOfTriangles = 1000;
+	int numberOfTriangles = 18;
 	float pointRange = 1000;
 
-	float* randomVertices = createRandomTriangles(numberOfTriangles, pointRange);
+	//float* randomVertices = createRandomTriangles(numberOfTriangles, pointRange);
 
-	KdTree kdtree = KdTree(randomVertices, numberOfTriangles);
-	kdtree.printStatistics();
+	KdTree kdtree = KdTree(vertices, 2);
+	kdtree.print();
 
-	Ray ray = createRandomRay(10);
+	//Ray ray = createRandomRay(10);
+	Ray ray = Ray(Vector(0, 0, -1), Vector(0, 0, 1));
 	std::cout << "Ray origin: " << ray.origin << " Ray direction: " << ray.direction << std::endl;
 
-	Triangle* triangle = kdtree.raycast(ray, 1);
+	RayHit* rayHit = kdtree.raycast(ray, 1);
 
-	if (triangle != nullptr) {
-		std::cout << "Found a triangle!" << std::endl;
-		std::cout << triangle->a->pos << std::endl;
-		std::cout << triangle->b->pos << std::endl;
-		std::cout << triangle->c->pos << std::endl;
+	if (rayHit != nullptr) {
+		std::cout << "Found a triangle:" << std::endl;
+		std::cout << rayHit->triangle->a->pos << std::endl;
+		std::cout << rayHit->triangle->b->pos << std::endl;
+		std::cout << rayHit->triangle->c->pos << std::endl;
+
+		std::cout << "RayHit at:" << std::endl;
+		std::cout << rayHit->position << std::endl;
 	}
 	else {
 		std::cout << "Nothing here!" << std::endl;
