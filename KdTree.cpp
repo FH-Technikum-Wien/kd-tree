@@ -8,11 +8,26 @@
 
 KdTree::KdTree(float* vertices, int numberOfTriangles) : KdTree(getPointList(vertices, numberOfTriangles)) {}
 
-KdTree::KdTree(std::vector<Point*> points) {
-	root = createKdTree(points, 0, Vector(0,0,0), Vector(0,0,0));
+KdTree::KdTree(std::vector<Point*> points) 
+{
+	Vector max = Vector(0, 0, 0);
+	Vector min = Vector(0, 0, 0);
+	// Get max values for axes.
+	for (int axis = 0; axis < DIMENSIONS; axis++)
+	{
+		auto comparator = getComparatorForAxis(axis);
+
+		Point* minPoint = *std::min_element(points.begin(), points.end(), comparator);
+		Point* maxPoint = *std::max_element(points.begin(), points.end(), comparator);
+
+		max[axis] = maxPoint->pos[axis];
+		min[axis] = minPoint->pos[axis];
+	}
+
+	root = createKdTree(points, 0, max, min);
 }
 
-Triangle* KdTree::raycast(Ray ray, float maxDistance)
+RayHit* KdTree::raycast(Ray ray, float maxDistance)
 {
 	return findIntersection(root, ray, maxDistance);
 }
@@ -162,7 +177,7 @@ Node* KdTree::createKdTree(std::vector<Point*> points, int depth, Vector max, Ve
 /// 3. Check far node
 /// If no collision here or skipped -> No collision at all
 /// </summary>
-Triangle* KdTree::findIntersection(Node* node, Ray ray, float maxDistance)
+RayHit* KdTree::findIntersection(Node* node, Ray ray, float maxDistance)
 {
 	// No node, no triangle to intersect.
 	if (node == nullptr)
@@ -182,15 +197,16 @@ Triangle* KdTree::findIntersection(Node* node, Ray ray, float maxDistance)
 		t = maxDistance;
 
 	// Check near node.
-	Triangle* triangle = findIntersection(near, ray, t);
+	RayHit* hit = findIntersection(near, ray, t);
 
 	// Return triangle if collided
-	if (triangle != nullptr)
-		return triangle;
+	if (hit != nullptr)
+		return hit;
 
 	// Check current node.
-	if (rayIntersectionWithTriagnle(node->point->triangle, ray))
-		return node->point->triangle;
+	hit = rayIntersectionWithTriagnle(node->point->triangle, ray);
+	if (hit != nullptr)
+		return hit;
 
 	
 
@@ -209,7 +225,7 @@ Triangle* KdTree::findIntersection(Node* node, Ray ray, float maxDistance)
 /// Möller–Trumbore intersection algorithm
 /// https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
 /// </summary>
-bool KdTree::rayIntersectionWithTriagnle(Triangle* triangle, Ray ray)
+RayHit* KdTree::rayIntersectionWithTriagnle(Triangle* triangle, Ray ray)
 {
 	const float EPSILON = 0.0000001;
 
@@ -225,22 +241,26 @@ bool KdTree::rayIntersectionWithTriagnle(Triangle* triangle, Ray ray)
 
 	// This ray is parallel to this triangle.
 	if (a > -EPSILON && a < EPSILON)
-		return false;
+		return nullptr;
 
 	float f = 1.0f / a;
 	Vector s = ray.origin - v1;
 	float u = f * s.dot(h);
 	
 	if (u < 0 || u > 1)
-		return false;
+		return nullptr;
 
 	Vector q = s.cross(edge1);
 	float v = f * ray.direction.dot(q);
 
 	if (v < 0 || u + v > 1)
-		return false;
+		return nullptr;
 
 	float t = f * edge2.dot(q);
 
-	return t > EPSILON;
+	if (t > EPSILON) {
+		return new RayHit(triangle, ray.origin + ray.direction * t);
+	}
+
+	return nullptr;
 }

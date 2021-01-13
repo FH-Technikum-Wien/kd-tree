@@ -30,7 +30,7 @@ struct Vector
 
 	void print() { std::cout << "{" << values[0] << "," << values[1] << "," << values[2] << "}" << std::endl; }
 
-	float* values;
+	float* values = nullptr;
 };
 
 inline std::ostream& operator<<(std::ostream& str, const Vector& vector) {
@@ -41,10 +41,10 @@ struct Point
 {
 	Point(Vector pos, Triangle* triangle) : pos(pos), triangle(triangle) {}
 
-	Vector pos;
+	Vector pos = nullptr;
 
 	// Triangle this point belongs to
-	Triangle* triangle;
+	Triangle* triangle = nullptr;
 };
 
 
@@ -54,9 +54,9 @@ struct Triangle
 
 	std::vector<Point*> getPoints() { return std::vector<Point*> {a, b, c}; }
 
-	Point* a;
-	Point* b;
-	Point* c;
+	Point* a = nullptr;
+	Point* b = nullptr;
+	Point* c = nullptr;
 };
 
 /// <summary>
@@ -68,10 +68,10 @@ struct Node
 	Node(Point* point, Node* left, Node* right, int axis, Vector max, Vector min) : point(point), left(left), right(right), axis(axis), max(max), min(min) {}
 
 	// Point of this splitting plane
-	Point* point;
+	Point* point = nullptr;
 	// Splitting plane to the left and right
-	Node* left;
-	Node* right;
+	Node* left = nullptr;
+	Node* right = nullptr;
 
 	// Axis in which this splitting plane lies
 	int axis = 0;
@@ -79,8 +79,8 @@ struct Node
 	// Splitting plane limits for each axis
 	// Defines where splitting plane for this node starts and ends
 	// 0 -> undefined/endless
-	Vector max;
-	Vector min;
+	Vector max = nullptr;
+	Vector min = nullptr;
 };
 
 
@@ -88,6 +88,14 @@ struct Ray
 {
 	Ray(Vector origin, Vector direction) : origin(origin), direction(direction) {}
 
-	Vector origin;
-	Vector direction;
+	Vector origin = nullptr;
+	Vector direction = nullptr;
+};
+
+struct RayHit 
+{
+	RayHit(Triangle* triangle, Vector position) : triangle(triangle), position(position) {}
+
+	Triangle* triangle = nullptr;
+	Vector position = nullptr;
 };
