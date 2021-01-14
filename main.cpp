@@ -7,6 +7,8 @@
 
 #include "KdTree.h"
 
+using namespace KdStructs;
+
 boost::mt19937 mersenneTwister;
 boost::uniform_int<> randomRange(0, RAND_MAX);
 boost::variate_generator< boost::mt19937, boost::uniform_int<> > mersenneTwisterRand(mersenneTwister, randomRange);
