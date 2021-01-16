@@ -84,11 +84,14 @@ void KdTree::printStatistics()
 {
 	int maxDepth = 0;
 	int minDepth = std::numeric_limits<int>::max();
+	int numberOfNodes = 0;
+	int maxNumberOfTrianglesPerPoint = 0;
 	std::function<void(KdStructs::Node*, int)> printStatisticsRecursive;
-	printStatisticsRecursive = [&maxDepth, &minDepth, &printStatisticsRecursive](KdStructs::Node* node, int depth) {
+	printStatisticsRecursive = [&maxDepth, &minDepth, &numberOfNodes, &maxNumberOfTrianglesPerPoint, &printStatisticsRecursive](KdStructs::Node* node, int depth) {
 		if (node == nullptr)
 			return;
 
+		numberOfNodes++;
 		// Current depth higher than maxDepth -> new highest depth.
 		if (depth > maxDepth)
 			maxDepth = depth;
@@ -96,6 +99,9 @@ void KdTree::printStatistics()
 		// If leaf node and smaller depth than minDepth -> new lowest depth.
 		if (node->left == nullptr && node->right == nullptr && depth < minDepth)
 			minDepth = depth;
+
+		if (node->point->triangles.size() > maxNumberOfTrianglesPerPoint)
+			maxNumberOfTrianglesPerPoint = node->point->triangles.size();
 
 		// Continue left and right recursively.
 		printStatisticsRecursive(node->left, depth + 1);
@@ -105,6 +111,8 @@ void KdTree::printStatistics()
 	printStatisticsRecursive(root, 0);
 	std::cout << "Max Depth: " << maxDepth << std::endl;
 	std::cout << "Min Depth: " << minDepth << std::endl;
+	std::cout << "Number of nodes: " << numberOfNodes << std::endl;
+	std::cout << "Max number of triangles per point: " << maxNumberOfTrianglesPerPoint << std::endl;
 }
 
 std::vector<KdStructs::Point*> KdTree::getPointList(float* vertices, unsigned int vertexCount, unsigned int* indices, unsigned int indexCount)

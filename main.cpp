@@ -46,7 +46,7 @@ int main() {
 	KdTree kdtree = KdTree(vertices, 6, indices, 6);
 	auto end = std::chrono::high_resolution_clock::now();
 	std::cout << "Building time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << " microseconds." << std::endl;
-
+	kdtree.printStatistics();
 	//Ray ray = createRandomRay(10);
 	Ray ray = Ray(Vector(0, 0, -1), Vector(0, 0, 1), 1000);
 
