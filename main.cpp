@@ -1,5 +1,6 @@
 #include <vector>
 #include <stdlib.h> 
+#include <chrono>
 
 #include "boost/random.hpp"
 #include "boost/random/uniform_int.hpp"
@@ -19,9 +20,14 @@ float vertices[18]{
 	2.0f, 0.0f, 0.0f,
 	1.0f, 2.0f, 0.0f,
 
-	1.5f, 1.0f, 0.0f,
+	2.0f, 0.0f, 0.0f,
 	3.5f, 1.0f, 0.0f,
 	2.5f, 3.0f, 0.0f,
+};
+
+unsigned int indices[6]{
+	0,1,2,
+	3,4,5
 };
 
 float* createRandomTriangles(int numberOfTriangles, int range);
@@ -34,26 +40,36 @@ int main() {
 
 	//float* randomVertices = createRandomTriangles(numberOfTriangles, pointRange);
 
-	KdTree kdtree = KdTree(vertices, 2);
-	kdtree.print();
+
+	// Create kd-tree
+	auto start = std::chrono::high_resolution_clock::now();
+	KdTree kdtree = KdTree(vertices, 6, indices, 6);
+	auto end = std::chrono::high_resolution_clock::now();
+	std::cout << "Building time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << " microseconds." << std::endl;
 
 	//Ray ray = createRandomRay(10);
-	Ray ray = Ray(Vector(0, 0, -1), Vector(0, 0, 1));
+	Ray ray = Ray(Vector(0, 0, -1), Vector(0, 0, 1), 1000);
+
+
+	RayHit* rayHit = nullptr;
+	start = std::chrono::high_resolution_clock::now();
+	kdtree.raycast(ray, rayHit);
+	end = std::chrono::high_resolution_clock::now();
+	std::cout << "Raycast time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << " microseconds." << std::endl;
+
+
 	std::cout << "Ray origin: " << ray.origin << " Ray direction: " << ray.direction << std::endl;
-
-	RayHit* rayHit = kdtree.raycast(ray, 1);
-
 	if (rayHit != nullptr) {
 		std::cout << "Found a triangle:" << std::endl;
-		std::cout << rayHit->triangle->a->pos << std::endl;
-		std::cout << rayHit->triangle->b->pos << std::endl;
-		std::cout << rayHit->triangle->c->pos << std::endl;
+		std::cout << rayHit->triangle->a << std::endl;
+		std::cout << rayHit->triangle->b << std::endl;
+		std::cout << rayHit->triangle->c << std::endl;
 
 		std::cout << "RayHit at:" << std::endl;
 		std::cout << rayHit->position << std::endl;
 	}
 	else {
-		std::cout << "Nothing here!" << std::endl;
+		std::cout << "Nothing hit!" << std::endl;
 	}
 }
 
@@ -81,5 +97,5 @@ Ray createRandomRay(int originRange) {
 		static_cast <float> (mersenneTwisterRand()) / (static_cast <float> (RAND_MAX)),
 		static_cast <float> (mersenneTwisterRand()) / (static_cast <float> (RAND_MAX))
 	);
-	return Ray(origin, direction);
+	return Ray(origin, direction, 1000);
 }
