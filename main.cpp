@@ -244,6 +244,7 @@ void showHelp()
 	std::cout << "--range [-r] <vertexRange>                         -> Range in which the random vertices will be generated." << std::endl;
 	std::cout << "--interactive [-i]                                 -> Enables 'interactive-mode' allowing to define custom rays." << std::endl;
 	std::cout << "--verbose [-v]                                     -> Prints out additional information." << std::endl;
+	std::cout << "--slow [-s]                                        -> Uses a slow procedure to check and merge same vertices." << std::endl;
 	std::cout << "--help                                             -> Prints out this message." << std::endl;
 	std::cout << std::endl;
 }
