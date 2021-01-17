@@ -31,19 +31,22 @@ unsigned int indices[6]{
 };
 
 float* createRandomTriangles(int numberOfTriangles, int range);
+unsigned int* getIndexList(unsigned int numberOfVertices);
 Ray createRandomRay(int originRange);
 
 int main() {
 	
-	int numberOfTriangles = 18;
-	float pointRange = 1000;
+	int numberOfTriangles = 1000;
+	float pointRange = 10;
+	int numberOfVertices = numberOfTriangles * 3;
 
-	//float* randomVertices = createRandomTriangles(numberOfTriangles, pointRange);
+	float* randomVertices = createRandomTriangles(numberOfTriangles, pointRange);
+	unsigned int* indices = getIndexList(numberOfVertices);
 
 
 	// Create kd-tree
 	auto start = std::chrono::high_resolution_clock::now();
-	KdTree kdtree = KdTree(vertices, 6, indices, 6);
+	KdTree kdtree = KdTree(randomVertices, numberOfVertices);
 	auto end = std::chrono::high_resolution_clock::now();
 	std::cout << "Building time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << " microseconds." << std::endl;
 	kdtree.printStatistics();
@@ -76,7 +79,6 @@ int main() {
 float* createRandomTriangles(int numberOfTriangles, int range)
 {
 	float* vertices = new float[numberOfTriangles * 9];
-	srand(1);
 	// Create vertices for triangles
 	for (int i = 0; i < numberOfTriangles * 9; i++)
 	{
@@ -84,6 +86,17 @@ float* createRandomTriangles(int numberOfTriangles, int range)
 		vertices[i] = random;
 	}
 	return vertices;
+}
+
+unsigned int* getIndexList(unsigned int numberOfVertices)
+{
+	unsigned int* indices = new unsigned int[numberOfVertices];
+	// Create vertices for triangles
+	for (unsigned int i = 0; i < numberOfVertices; i++)
+	{
+		indices[i] = i;
+	}
+	return indices;
 }
 
 Ray createRandomRay(int originRange) {

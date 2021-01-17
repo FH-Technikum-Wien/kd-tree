@@ -68,6 +68,8 @@ namespace KdStructs {
 		Vector a;
 		Vector b;
 		Vector c;
+
+		unsigned int checkCache = 0;
 	};
 
 	/// <summary>

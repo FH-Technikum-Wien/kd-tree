@@ -10,6 +10,7 @@ class KdTree
 {
 public:
 	KdTree(float* vertices, unsigned int vertexCount, unsigned int* indices, unsigned int indexCount);
+	KdTree(float* vertices, unsigned int vertexCount);
 	KdTree(std::vector<KdStructs::Point*> points);
 	~KdTree();
 
@@ -22,9 +23,10 @@ public:
 private:
 
 	std::vector<KdStructs::Point*> getPointList(float* vertices, unsigned int vertexCount, unsigned int* indices, unsigned int indexCount);
+	std::vector<KdStructs::Point*> getPointList(float* vertices, unsigned int vertexCount);
 	KdStructs::Node* createKdTree(std::vector<KdStructs::Point*> points, int depth, KdStructs::Vector max, KdStructs::Vector min);
 	void findIntersection(KdStructs::Node* node, KdStructs::Ray ray, KdStructs::RayHit*& hit);
-	float rayIntersectionWithTriagnle(KdStructs::Triangle* triangle, KdStructs::Ray ray);
+	float rayIntersectionWithTriangle(KdStructs::Triangle* triangle, KdStructs::Ray ray);
 
 	inline auto getComparatorForAxis(int axis) const
 	{ 
@@ -44,5 +46,7 @@ private:
 	KdStructs::Node* root;
 	// Used for clean up.
 	std::vector<KdStructs::Triangle*> triangles;
+
+	unsigned int checkCache = 0;
 };
 

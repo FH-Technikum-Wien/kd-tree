@@ -11,6 +11,9 @@
 KdTree::KdTree(float* vertices, unsigned int vertexCount, unsigned int* indices, unsigned int indexCount) :
 	KdTree(getPointList(vertices, vertexCount, indices, indexCount)) {}
 
+KdTree::KdTree(float* vertices, unsigned int vertexCount) :
+	KdTree(getPointList(vertices, vertexCount)) {}
+
 KdTree::KdTree(std::vector<KdStructs::Point*> points)
 {
 	KdStructs::Vector max = KdStructs::Vector(0, 0, 0);
@@ -41,6 +44,9 @@ KdTree::~KdTree()
 
 void KdTree::raycast(KdStructs::Ray ray, KdStructs::RayHit*& hit)
 {
+	checkCache++;
+	if (checkCache == std::numeric_limits<unsigned int>::max())
+		checkCache = 0;
 	findIntersection(root, ray, hit);
 }
 
@@ -85,9 +91,9 @@ void KdTree::printStatistics()
 	int maxDepth = 0;
 	int minDepth = std::numeric_limits<int>::max();
 	int numberOfNodes = 0;
-	int maxNumberOfTrianglesPerPoint = 0;
+	int maxNumberTrianglesPerPoint = 0;
 	std::function<void(KdStructs::Node*, int)> printStatisticsRecursive;
-	printStatisticsRecursive = [&maxDepth, &minDepth, &numberOfNodes, &maxNumberOfTrianglesPerPoint, &printStatisticsRecursive](KdStructs::Node* node, int depth) {
+	printStatisticsRecursive = [&maxDepth, &minDepth, &numberOfNodes, &maxNumberTrianglesPerPoint, &printStatisticsRecursive](KdStructs::Node* node, int depth) {
 		if (node == nullptr)
 			return;
 
@@ -100,8 +106,8 @@ void KdTree::printStatistics()
 		if (node->left == nullptr && node->right == nullptr && depth < minDepth)
 			minDepth = depth;
 
-		if (node->point->triangles.size() > maxNumberOfTrianglesPerPoint)
-			maxNumberOfTrianglesPerPoint = node->point->triangles.size();
+		if (node->point != nullptr && node->point->triangles.size() > maxNumberTrianglesPerPoint)
+			maxNumberTrianglesPerPoint = node->point->triangles.size();
 
 		// Continue left and right recursively.
 		printStatisticsRecursive(node->left, depth + 1);
@@ -112,12 +118,13 @@ void KdTree::printStatistics()
 	std::cout << "Max Depth: " << maxDepth << std::endl;
 	std::cout << "Min Depth: " << minDepth << std::endl;
 	std::cout << "Number of nodes: " << numberOfNodes << std::endl;
-	std::cout << "Max number of triangles per point: " << maxNumberOfTrianglesPerPoint << std::endl;
+	std::cout << "Max number of triangles per point: " << maxNumberTrianglesPerPoint << std::endl;
 }
 
 std::vector<KdStructs::Point*> KdTree::getPointList(float* vertices, unsigned int vertexCount, unsigned int* indices, unsigned int indexCount)
 {
 	std::vector<KdStructs::Point*> points;
+	points.resize(vertexCount, nullptr);
 	// Create points for each triangle and connect them (with a reference to the triangle).
 	for (int i = 0; i < indexCount; i += 3)
 	{
@@ -126,7 +133,46 @@ std::vector<KdStructs::Point*> KdTree::getPointList(float* vertices, unsigned in
 		int vertexIndex2 = indices[i + 1] * 3;
 		int vertexIndex3 = indices[i + 2] * 3;
 
-		int triangleIndex = i / 3;
+		// Convert vertexData to Vector.
+		KdStructs::Vector a = KdStructs::Vector(vertices[vertexIndex1], vertices[vertexIndex1 + 1], vertices[vertexIndex1 + 2]);
+		KdStructs::Vector b = KdStructs::Vector(vertices[vertexIndex2], vertices[vertexIndex2 + 1], vertices[vertexIndex2 + 2]);
+		KdStructs::Vector c = KdStructs::Vector(vertices[vertexIndex3], vertices[vertexIndex3 + 1], vertices[vertexIndex3 + 2]);
+
+		KdStructs::Triangle* triangle = new KdStructs::Triangle(a, b, c);
+		//triangles.push_back(triangle);
+
+		int pointIndex1 = vertexIndex1 / 3;
+		int pointIndex2 = vertexIndex2 / 3;
+		int pointIndex3 = vertexIndex3 / 3;
+
+		if (points[pointIndex1] != nullptr)
+			points[pointIndex1]->triangles.push_back(triangle);
+		else
+			points[pointIndex1] = new KdStructs::Point(a, triangle);
+
+		if (points[pointIndex2] != nullptr)
+			points[pointIndex2]->triangles.push_back(triangle);
+		else
+			points[pointIndex2] = new KdStructs::Point(b, triangle);
+
+		if (points[pointIndex3] != nullptr)
+			points[pointIndex3]->triangles.push_back(triangle);
+		else
+			points[pointIndex3] = new KdStructs::Point(c, triangle);
+	}
+	return points;
+}
+
+std::vector<KdStructs::Point*> KdTree::getPointList(float* vertices, unsigned int vertexCount) 
+{
+	std::vector<KdStructs::Point*> points;
+	// Create points for each triangle and connect them (with a reference to the triangle).
+	for (int i = 0; i < vertexCount; i += 3)
+	{
+		// Get vertex indices, defining the current triangle
+		int vertexIndex1 = i * 3;
+		int vertexIndex2 = (i + 1) * 3;
+		int vertexIndex3 = (i + 2) * 3;
 
 		// Convert vertexData to Vector.
 		KdStructs::Vector a = KdStructs::Vector(vertices[vertexIndex1], vertices[vertexIndex1 + 1], vertices[vertexIndex1 + 2]);
@@ -134,7 +180,7 @@ std::vector<KdStructs::Point*> KdTree::getPointList(float* vertices, unsigned in
 		KdStructs::Vector c = KdStructs::Vector(vertices[vertexIndex3], vertices[vertexIndex3 + 1], vertices[vertexIndex3 + 2]);
 
 		KdStructs::Triangle* triangle = new KdStructs::Triangle(a, b, c);
-		triangles.push_back(triangle);
+		//triangles.push_back(triangle);
 
 		// Check if point is already in list (duplicate vertex).
 		// For a.
@@ -162,6 +208,7 @@ std::vector<KdStructs::Point*> KdTree::getPointList(float* vertices, unsigned in
 	}
 	return points;
 }
+
 
 KdStructs::Node* KdTree::createKdTree(std::vector<KdStructs::Point*> points, int depth, KdStructs::Vector max, KdStructs::Vector min)
 {
@@ -216,14 +263,14 @@ KdStructs::Node* KdTree::createKdTree(std::vector<KdStructs::Point*> points, int
 }
 
 /// <summary>
-/// 1. Check near node first -> Stop if collided.
-/// 2. Check current node -> Stop if collided.
+/// 1. Check current node
+/// 2. Check near node first
 /// Skip far node if:
 /// - Non parallel ray (would never intersect far plane)
 /// - Distance from ray to splitting plane smaller 0 -> far plane behind us
-/// - Distance greater than maxDistance -> skip
+/// - Distance greater than maxDistance
+/// - Distance greater than current intersection
 /// 3. Check far node
-/// If no collision here or skipped -> No collision at all
 /// </summary>
 void KdTree::findIntersection(KdStructs::Node* node, KdStructs::Ray ray, KdStructs::RayHit*& hit)
 {
@@ -231,9 +278,15 @@ void KdTree::findIntersection(KdStructs::Node* node, KdStructs::Ray ray, KdStruc
 	if (node == nullptr)
 		return;
 
+
 	// Check current node.
 	for (KdStructs::Triangle* triangle : node->point->triangles) {
-		float distance = rayIntersectionWithTriagnle(triangle, ray);
+		if (triangle->checkCache == this->checkCache)
+			continue;
+		else
+			triangle->checkCache = this->checkCache;
+
+		float distance = rayIntersectionWithTriangle(triangle, ray);
 		if (distance < 0)
 			continue;
 
@@ -246,7 +299,7 @@ void KdTree::findIntersection(KdStructs::Node* node, KdStructs::Ray ray, KdStruc
 			hit->distance = distance;
 		}
 	}
-	
+
 
 	int axis = node->axis;
 
@@ -280,7 +333,7 @@ void KdTree::findIntersection(KdStructs::Node* node, KdStructs::Ray ray, KdStruc
 /// Möller–Trumbore intersection algorithm
 /// https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
 /// </summary>
-float KdTree::rayIntersectionWithTriagnle(KdStructs::Triangle* triangle, KdStructs::Ray ray)
+float KdTree::rayIntersectionWithTriangle(KdStructs::Triangle* triangle, KdStructs::Ray ray)
 {
 	const float EPSILON = 0.0000001;
 
