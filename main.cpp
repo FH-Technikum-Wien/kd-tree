@@ -134,38 +134,49 @@ int main(int argc, char* argv[])
 
 	if (interactive) {
 		std::cout << "\n[->] Interaction enabled!" << std::endl;
-		std::cout << "You can shoot rays now. Example: 0,0,0;1,0,0 (<origin>,<direction>)" << std::endl;
+		std::cout << "You can shoot rays now. Example: 0,0,0;1,0,0 (<origin>,<direction>). You can also shhot a random ray by simply typing 'r'." << std::endl;
 		while (true)
 		{
 			std::cout << "Ray: ";
-			std::string input;
-			std::getline(std::cin, input, ',');
-			// Get origin.
-			float x = std::stof(input);
-			std::getline(std::cin, input, ',');
-			float y = std::stof(input);
-			std::getline(std::cin, input, ';');
-			float z = std::stof(input);
-			// Get direction.
-			std::getline(std::cin, input, ',');
-			float dx = std::stof(input);
-			std::getline(std::cin, input, ',');
-			float dy = std::stof(input);
-			std::getline(std::cin, input);
-			float dz = std::stof(input);
+
+			KdStructs::Ray ray = KdStructs::Ray(Vector(0,0,0), Vector(0,0,0), 1000);
+			if (std::cin.peek() == 'r') {
+				std::string temp;
+				std::getline(std::cin, temp);
+				ray = createRandomRay(pointRange);
+			}
+			else {
+				std::string input;
+				// Get origin.
+				std::getline(std::cin, input, ',');
+				float x = std::stof(input);
+				std::getline(std::cin, input, ',');
+				float y = std::stof(input);
+				std::getline(std::cin, input, ';');
+				float z = std::stof(input);
+				// Get direction.
+				std::getline(std::cin, input, ',');
+				float dx = std::stof(input);
+				std::getline(std::cin, input, ',');
+				float dy = std::stof(input);
+				std::getline(std::cin, input);
+				float dz = std::stof(input);
+
+				ray = Ray(Vector(x, y, z), Vector(dx, dy, dz), 1000);
+			}
 
 			RayHit* rayHit = nullptr;
 			// Casting ray
 			std::cout << "\n[*] Casting Ray." << std::endl;
 			auto start = std::chrono::high_resolution_clock::now();
-			kdtree->raycast(Ray(Vector(x, y, z), Vector(dx, dy, dz), 1000), rayHit);
+			kdtree->raycast(ray, rayHit);
 			auto end = std::chrono::high_resolution_clock::now();
 			std::cout << "Raycast time: " << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << " microseconds." << std::endl;
 			handleRayHit(rayHit);
 		}
 	}
 	else {
-		Ray ray = createRandomRay(10);
+		Ray ray = createRandomRay(pointRange);
 		RayHit* rayHit = nullptr;
 
 		// Casting ray
